@@ -1,0 +1,45 @@
+{
+  "name": "modgrad",
+  "version": "0.1.0",
+  "description": "Beautiful, optionally animated mesh / blurry / grainy gradient backgrounds for React.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "src", "README.md"],
+  "sideEffects": false,
+  "keywords": [
+    "react",
+    "gradient",
+    "mesh-gradient",
+    "background",
+    "noise",
+    "grain",
+    "aurora",
+    "blur"
+  ],
+  "scripts": {
+    "dev": "bun --hot server.ts",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "puppeteer-core": "^25.2.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "typescript": "^5"
+  }
+}
