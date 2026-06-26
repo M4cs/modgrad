@@ -20,6 +20,6 @@ export declare function clamp(v: number, lo: number, hi: number): number;
  * visibly shimmers in sparse corners as the blob drifts. Keeping one hue and
  * letting `color-mix` interpolate alpha (premultiplied) removes the fringe, and
  * the extra stops smooth out banding. */
-export declare function blobBackground(l: Layer): string;
+export declare function blobBackground(l: Layer, soft?: number): string;
 /** Non-mesh variants render as one flat background string. */
 export declare function flatBackground(variant: Exclude<GradientVariant, "mesh" | "aurora">, layers: Layer[], angle: number): string;

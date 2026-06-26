@@ -42,6 +42,9 @@ export function Gradient(props) {
         seed,
     });
     const grainAmount = grain === true ? 0.15 : grain === false ? 0 : grain;
+    // For mesh/aurora, `blur` is emulated by softening the blobs (filter-free).
+    // Diminishing curve: 30 → ~0.30, 80 → ~0.53.
+    const layeredSoft = blur > 0 ? blur / (blur + 70) : 0;
     const container = {
         ...(fixed ? { position: "fixed", inset: 0 } : FILL),
         overflow: "hidden",
@@ -53,34 +56,20 @@ export function Gradient(props) {
         background,
         ...style,
     };
-    return (_jsxs("div", { className: className, style: container, "aria-hidden": true, children: [isLayered ? (_jsx("div", { style: {
-                    position: "absolute",
-                    // When blurred, the OVERSCAN lives on this filtered wrapper so the
-                    // blur's filter region falls far outside the viewport (no clipped
-                    // edge) and the moving blobs rasterize into one clean image per
-                    // frame instead of fighting the filter as separate GPU layers.
-                    inset: blur ? `-${EDGE}%` : 0,
-                    filter: blur ? `blur(${blur}px)` : undefined,
-                    ...(blur
-                        ? {
-                            transform: "translateZ(0)",
-                            willChange: "transform",
-                            backfaceVisibility: "hidden",
-                        }
-                        : null),
-                }, children: layers.map((l, i) => (_jsx("div", { ref: (el) => {
+    return (_jsxs("div", { className: className, style: container, "aria-hidden": true, children: [isLayered ? (
+            // No CSS filter here: `blur` is baked into the blob softness instead,
+            // so the animated mesh never sits under a filter (which flickers in
+            // Firefox at full-screen sizes). Each blob overscans the clip so its
+            // edges never enter view while moving.
+            _jsx("div", { style: FILL, children: layers.map((l, i) => (_jsx("div", { ref: (el) => {
                         motionRefs.current[i] = el;
                     }, style: {
                         position: "absolute",
-                        // overscan lives here only when there's no blur wrapper to host it
-                        inset: blur ? 0 : `-${EDGE}%`,
-                        background: blobBackground(overscan(l)),
+                        inset: `-${EDGE}%`,
+                        background: blobBackground(overscan(l), layeredSoft),
                         opacity: l.opacity,
                         mixBlendMode: variant === "aurora" ? "screen" : "normal",
-                        // Promote to a stable GPU layer for smooth motion ONLY when not
-                        // inside a blur filter — promotion under a filter causes the
-                        // shimmer we're fixing.
-                        willChange: (animateOn || interactive) && !blur ? "transform" : undefined,
+                        willChange: animateOn || interactive ? "transform" : undefined,
                     } }, i))) })) : (_jsx("div", { style: {
                     ...FILL,
                     background: flatBackground(variant, layers, effAngle),

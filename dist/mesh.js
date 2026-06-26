@@ -72,11 +72,15 @@ export function clamp(v, lo, hi) {
  * visibly shimmers in sparse corners as the blob drifts. Keeping one hue and
  * letting `color-mix` interpolate alpha (premultiplied) removes the fringe, and
  * the extra stops smooth out banding. */
-export function blobBackground(l) {
+export function blobBackground(l, soft = 0) {
     const c = (a) => withAlpha(l.color, a);
-    const s = l.size;
-    // `falloff` lets a blob hold its core color longer before easing out.
-    const hold = clamp(l.falloff, 0, 1);
+    // `soft` (0..~0.6) bakes "blur" into the blob itself — bigger and more
+    // feathered — instead of a CSS `filter: blur()`, which flickers over animated
+    // content in Firefox at large sizes. The blobs are already soft gradients, so
+    // this reads the same while staying filter-free and cheap.
+    const s = l.size * (1 + soft * 0.6);
+    // `falloff` lets a blob hold its core color longer; softness feathers earlier.
+    const hold = clamp(l.falloff, 0, 1) * (1 - soft * 0.7);
     const stops = [
         `${c(1)} 0%`,
         `${c(0.88)} ${(s * 0.22 * hold).toFixed(1)}%`,

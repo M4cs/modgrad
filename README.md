@@ -6,6 +6,8 @@ React. One component, zero runtime dependencies, SSR-safe, no canvas or WebGL.
 Reproduce the soft Arc-card look, build flowing animated hero backgrounds, or wash a
 translucent gradient over a photo — all from a single `<Gradient />`.
 
+**[→ Live demo](https://m4cs.github.io/modgrad/)**
+
 ```bash
 bun add modgrad   # or npm / pnpm / yarn
 ```
@@ -52,6 +54,17 @@ That's it. The gradient is `position: absolute; inset: 0`, `pointer-events: none
   />
 </div>
 
+// Theme-aware: follows the OS, or force light/dark
+<Gradient preset="arc" theme="system" />
+<Gradient
+  theme="dark"
+  background={{ light: "#f4ecff", dark: "#160a2e" }}
+  colors={{
+    light: ["#f4768f", "#c98bff", "#7c6cff"],
+    dark: ["#e8385e", "#b13ad8", "#4920d0"],
+  }}
+/>
+
 // Full-viewport app background
 <Gradient preset="ocean" fixed animate />
 
@@ -68,14 +81,17 @@ That's it. The gradient is `position: absolute; inset: 0`, `pointer-events: none
 
 | Prop          | Type                                                    | Default     | Description                                                            |
 | ------------- | ------------------------------------------------------- | ----------- | --------------------------------------------------------------------- |
-| `colors`      | `(string \| Blob)[]`                                    | —           | The colors. A `Blob` is `{ color, x?, y?, size?, falloff?, opacity? }`. |
+| `colors`      | `Colors \| { light; dark }`                             | —           | The colors. A `Blob` is `{ color, x?, y?, size?, falloff?, opacity? }`. Can differ per theme. |
 | `preset`      | `PresetName`                                            | —           | A curated palette + layout (see below). `colors` overrides it.        |
+| `theme`       | `"system" \| "light" \| "dark"`                         | `"system"`  | `system` follows the OS and updates live. Picks `{ light, dark }` values. |
 | `variant`     | `"mesh" \| "aurora" \| "linear" \| "radial" \| "conic"` | `"mesh"`    | How the colors are arranged.                                          |
 | `angle`       | `number`                                                | `135`       | Angle for `linear` / `conic`.                                         |
-| `background`  | `string`                                                | preset/dark | Solid color painted behind every layer.                               |
+| `background`  | `string \| { light; dark }`                             | preset/theme| Solid color painted behind every layer. Can differ per theme.         |
 | `grain`       | `boolean \| number`                                     | `false`     | SVG film grain. `true` = `0.15`, or pass `0`–`1`.                     |
-| `grainScale`  | `number`                                                | `180`       | Grain tile size in px (smaller = finer).                              |
-| `blur`        | `number`                                                | `0`         | Gaussian blur on the color layers, in px.                             |
+| `grainScale`  | `number`                                                | `180`       | Grain fineness (smaller = finer/denser).                              |
+| `grainFrequency` | `number`                                             | —           | Set the noise `baseFrequency` directly (overrides `grainScale`).      |
+| `grainOctaves`   | `number`                                             | `2`         | Noise octaves — more = softer/cloudier, fewer = tighter.              |
+| `blur`        | `number`                                                | `0`         | Softness. Baked into the blobs for mesh/aurora (filter-free, no flicker); a CSS blur in px for linear/radial/conic. |
 | `animate`     | `boolean \| { speed?: number }`                         | `false`     | Slow organic drift. Honors `prefers-reduced-motion`.                  |
 | `interactive` | `boolean`                                               | `false`     | Layers drift toward the pointer.                                      |
 | `opacity`     | `number`                                                | `1`         | Overall opacity (for overlays).                                       |

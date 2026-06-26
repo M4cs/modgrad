@@ -10,10 +10,21 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
-  "files": ["dist", "src", "README.md"],
+  "files": ["dist", "README.md", "LICENSE"],
   "sideEffects": false,
+  "license": "MIT",
+  "author": "Max Bridgland <me@maxbridgland.com>",
+  "homepage": "https://m4cs.github.io/modgrad/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/M4cs/modgrad.git"
+  },
+  "bugs": {
+    "url": "https://github.com/M4cs/modgrad/issues"
+  },
   "keywords": [
     "react",
     "gradient",
@@ -27,7 +38,9 @@
   "scripts": {
     "dev": "bun --hot server.ts",
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "build:demo": "rm -rf dist-demo && bun build ./demo/index.html --outdir ./dist-demo --minify",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run build"
   },
   "peerDependencies": {
     "react": ">=18",
@@ -37,7 +50,6 @@
     "@types/bun": "latest",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "puppeteer-core": "^25.2.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "typescript": "^5"
