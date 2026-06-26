@@ -256,6 +256,91 @@ function LiquidSection() {
   );
 }
 
+/* ---------------------------------------------------- Dither / banding */
+// A deep, near-monochrome palette like a dark hero — the worst case for 8-bit
+// banding, so the dither difference is obvious. Static (no animate) so the
+// contour rings are easy to spot/screenshot.
+const BAND_COLORS = ["#0e7490", "#0a3a4d", "#0a2540"];
+const BAND_BG = "#06121b";
+
+function DitherSection() {
+  const tiles: {
+    label: string;
+    code: string;
+    props: React.ComponentProps<typeof Gradient>;
+  }[] = [
+    { label: "no dither", code: "dither={false}", props: { dither: false } },
+    { label: "dither (default)", code: "dither", props: {} },
+    { label: "more dither", code: "dither={0.12}", props: { dither: 0.12 } },
+    { label: "+ film grain", code: "grain={0.14}", props: { grain: 0.14 } },
+    { label: "soft + dither", code: "blur={28}", props: { blur: 28 } },
+    {
+      label: "pixel-clean",
+      code: "dither={false} grain={false}",
+      props: { dither: false, grain: false },
+    },
+  ];
+  return (
+    <section className="block" id="dither">
+      <div className="wrap">
+        <div className="eyebrow">Smooth, band-free</div>
+        <h2>Dithering &amp; noise</h2>
+        <p className="lead">
+          Smooth dark gradients posterize into <em>contour rings</em> — 8-bit
+          banding. A near-invisible <code>dither</code> (on by default) scatters
+          those edges away; <code>grain</code> adds visible film texture; and{" "}
+          <code>blur</code> softens the colour transitions themselves. Toggle{" "}
+          <code>dither={"{false}"}</code> on the first tile to see the rings come
+          back.
+        </p>
+        <div className="grid">
+          {tiles.map((t) => (
+            <div className="tile" key={t.label}>
+              <Gradient
+                colors={BAND_COLORS}
+                background={BAND_BG}
+                {...t.props}
+              />
+              <span className="label">{t.label}</span>
+              <span className="sub">{t.code}</span>
+            </div>
+          ))}
+        </div>
+        <pre className="snippet mono">
+          <code>
+            <span style={{ opacity: 0.5 }}>// on by default — kills banding</span>
+            {"\n<"}
+            <span className="a">Gradient</span> <span className="k">colors</span>
+            ={"{"}
+            <span className="s">colors</span>
+            {"} />"}
+            {"\n\n"}
+            <span style={{ opacity: 0.5 }}>// tune the strength, 0–1</span>
+            {"\n<"}
+            <span className="a">Gradient</span> <span className="k">colors</span>
+            ={"{"}
+            <span className="s">colors</span>
+            {"} "}
+            <span className="k">dither</span>={"{"}
+            <span className="n">0.12</span>
+            {"} />"}
+            {"\n\n"}
+            <span style={{ opacity: 0.5 }}>// turn it fully off (pixel-clean)</span>
+            {"\n<"}
+            <span className="a">Gradient</span> <span className="k">colors</span>
+            ={"{"}
+            <span className="s">colors</span>
+            {"} "}
+            <span className="k">dither</span>={"{"}
+            <span className="n">false</span>
+            {"} />"}
+          </code>
+        </pre>
+      </div>
+    </section>
+  );
+}
+
 /* --------------------------------------------------------- Overlay */
 function OverlaySection() {
   return (
@@ -324,6 +409,7 @@ function Playground() {
   const [grain, setGrain] = useState(0.15);
   const [grainScale, setGrainScale] = useState(180);
   const [grainOctaves, setGrainOctaves] = useState(2);
+  const [dither, setDither] = useState(0.06);
   const [blur, setBlur] = useState(20);
   const [palette, setPalette] = useState(0);
   const [theme, setTheme] = useState<ThemeMode>("dark");
@@ -354,6 +440,7 @@ function Playground() {
               grain={grain}
               grainScale={grainScale}
               grainOctaves={grainOctaves}
+              dither={dither}
               blur={blur}
               warp={warp}
               animate={animate ? { speed } : false}
@@ -423,6 +510,19 @@ function Playground() {
                 step={1}
                 value={grainOctaves}
                 onChange={(e) => setGrainOctaves(+e.target.value)}
+              />
+            </div>
+            <div className="ctrl">
+              <label>
+                dither <b>{dither === 0 ? "off" : dither.toFixed(2)}</b>
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={0.3}
+                step={0.01}
+                value={dither}
+                onChange={(e) => setDither(+e.target.value)}
               />
             </div>
             <div className="ctrl">
@@ -557,6 +657,14 @@ function Playground() {
                 {"\n  "}
                 <span className="k">grainOctaves</span>={"{"}
                 <span className="n">{grainOctaves}</span>
+                {"}"}
+              </>
+            ) : null}
+            {dither !== 0.06 ? (
+              <>
+                {"\n  "}
+                <span className="k">dither</span>={"{"}
+                <span className="n">{dither === 0 ? "false" : dither}</span>
                 {"}"}
               </>
             ) : null}
@@ -695,6 +803,7 @@ function App() {
       <PresetGallery />
       <VariantGallery />
       <LiquidSection />
+      <DitherSection />
       <ThemeSection />
       <OverlaySection />
       <NoiseSection />

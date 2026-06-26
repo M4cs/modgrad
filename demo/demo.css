@@ -6,6 +6,11 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  scrollbar-width: thin;
+}
+
 :root {
   --bg: #0a0a0f;
   --fg: #ececf1;

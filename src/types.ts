@@ -74,6 +74,12 @@ export interface GradientProps {
   /** Noise octaves — more = softer/cloudier, fewer = tighter. Default 2. */
   grainOctaves?: number;
 
+  /** Fine anti-banding dither — a near-invisible noise that hides the 8-bit
+   * colour banding (contour rings) smooth/dark gradients show. On by default;
+   * `false` / `0` turns it fully off, or pass 0–1 to tune the strength. This is
+   * separate from `grain` (the visible film texture). Default `true` (~0.06). */
+  dither?: boolean | number;
+
   /** Gaussian blur applied to the color layers, in px. Default 0. */
   blur?: number;
 

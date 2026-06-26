@@ -40,6 +40,14 @@ const MIN_MOTION_BLUR = 8;
 const SIZE_MOTION_BLUR = 0.028;
 const MAX_MOTION_BLUR = 64;
 
+// Default strength of the always-on anti-banding dither (overlay opacity).
+// Subtle enough to read as "clean", strong enough to scatter 8-bit band edges.
+const DEFAULT_DITHER = 0.06;
+// A dedicated, fine + tight noise tile for dithering — finer than the artistic
+// `grain` (higher baseFrequency) and single-octave so it's per-pixel speckle,
+// not cloud. Built once; the same neutral tile dithers every gradient.
+const DITHER_URL = grainDataUrl({ scale: 120, octaves: 1 });
+
 // useLayoutEffect on the client, useEffect on the server (avoids SSR warnings).
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -76,6 +84,7 @@ export function Gradient(props: GradientProps) {
     grainScale = 180,
     grainFrequency,
     grainOctaves,
+    dither = true,
     blur = 0,
     warp: warpProp,
     animate = false,
@@ -134,6 +143,8 @@ export function Gradient(props: GradientProps) {
   });
 
   const grainAmount = grain === true ? 0.15 : grain === false ? 0 : grain;
+  const ditherAmount =
+    dither === true ? DEFAULT_DITHER : dither === false ? 0 : dither;
 
   const [rootRef, maxSide] = useMaxSide();
 
@@ -208,6 +219,21 @@ export function Gradient(props: GradientProps) {
             filter: blur ? `blur(${blur}px)` : undefined,
             // zoom in so the blur's soft edge never reveals a dark border.
             transform: blur ? "scale(1.4)" : undefined,
+          }}
+        />
+      )}
+
+      {ditherAmount > 0 && (
+        // Anti-banding dither: a fine, neutral, symmetric (lighten+darken)
+        // overlay noise that scatters 8-bit band edges so smooth/dark gradients
+        // stop showing contour rings. Distinct from the visible `grain` texture.
+        <div
+          style={{
+            ...FILL,
+            backgroundImage: DITHER_URL,
+            backgroundRepeat: "repeat",
+            opacity: ditherAmount,
+            mixBlendMode: "overlay",
           }}
         />
       )}

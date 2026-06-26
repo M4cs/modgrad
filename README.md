@@ -115,6 +115,7 @@ will be painted under the gradient:
 | `grainScale`  | `number`                                                | `180`       | Grain fineness (smaller = finer/denser).                              |
 | `grainFrequency` | `number`                                             | —           | Set the noise `baseFrequency` directly (overrides `grainScale`).      |
 | `grainOctaves`   | `number`                                             | `2`         | Noise octaves — more = softer/cloudier, fewer = tighter.              |
+| `dither`      | `boolean \| number`                                     | `true`      | Fine anti-banding dither that hides 8-bit contour rings on smooth/dark gradients. `false` / `0` = none, or `0`–`1` to tune. Separate from `grain`. |
 | `blur`        | `number`                                                | `0`         | Softness. Baked into the blobs for mesh/aurora (filter-free, no flicker); a CSS blur in px for linear/radial/conic. |
 | `warp`        | `boolean \| { scale?; intensity?; detail? }`            | `false`     | Warp the color layers into organic swirls & waves via an SVG noise filter (mesh / aurora / liquid). `scale` = swirl size, `intensity` = px pushed, `detail` = noise octaves (1–4). On by default for `variant="liquid"`. |
 | `animate`     | `boolean \| { speed?: number }`                         | `false`     | Slow organic drift. Honors `prefers-reduced-motion`.                  |
@@ -176,8 +177,12 @@ Object.keys(presets); // inspect or remix any palette
 
 - **Mesh** = stacked `radial-gradient` layers over a base color, auto-placed toward the
   corners/edges (override with explicit `x`/`y`).
-- **Grain** = an inline `feTurbulence` SVG noise tile blended with `overlay` — crisp at
-  any DPI, weighs nothing, no image assets.
+- **Grain** = an inline `feTurbulence` SVG noise tile (opaque, mid-gray-centered) blended
+  with `overlay` — crisp at any DPI, weighs nothing, no image assets.
+- **Dither** = the same noise, but finer, single-octave and near-invisible, on by default.
+  Because it's symmetric (lightens *and* darkens), it scatters the 8-bit band edges that
+  make smooth/dark gradients show contour rings. Tune with `dither` (`0`–`1`), or
+  `dither={false}` for a pixel-clean gradient.
 - **Blur** is applied only to the color layers, so grain stays sharp on top.
 - **Warp / liquid** feeds the blobs through a static `feTurbulence` +
   `feDisplacementMap` filter — a fixed "lens" that bends circles into swirls and waves.
