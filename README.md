@@ -62,6 +62,12 @@ will be painted under the gradient:
 // Living, animated hero background that reacts to the cursor
 <Gradient preset="sunset" animate interactive grain />
 
+// Liquid: organic swirls & waves instead of plain circles (pure CSS/SVG)
+<Gradient colors={["#e8385e", "#b13ad8", "#4920d0", "#ff7eb3"]} variant="liquid" animate />
+
+// ...or warp any mesh / aurora and tune it
+<Gradient preset="ocean" warp={{ scale: 2, intensity: 110 }} animate />
+
 // Translucent overlay on top of a photo / video
 <div style={{ position: "relative" }}>
   <img src="/photo.jpg" />
@@ -102,7 +108,7 @@ will be painted under the gradient:
 | `colors`      | `Colors \| { light; dark }`                             | —           | The colors. A `Blob` is `{ color, x?, y?, size?, falloff?, opacity? }`. Can differ per theme. |
 | `preset`      | `PresetName`                                            | —           | A curated palette + layout (see below). `colors` overrides it.        |
 | `theme`       | `"system" \| "light" \| "dark"`                         | `"system"`  | `system` follows the OS and updates live. Picks `{ light, dark }` values. |
-| `variant`     | `"mesh" \| "aurora" \| "linear" \| "radial" \| "conic"` | `"mesh"`    | How the colors are arranged.                                          |
+| `variant`     | `"mesh" \| "aurora" \| "liquid" \| "linear" \| "radial" \| "conic"` | `"mesh"` | How the colors are arranged. `liquid` = `mesh` with `warp` on.    |
 | `angle`       | `number`                                                | `135`       | Angle for `linear` / `conic`.                                         |
 | `background`  | `string \| { light; dark }`                             | preset/theme| Solid color painted behind every layer. Can differ per theme.         |
 | `grain`       | `boolean \| number`                                     | `false`     | SVG film grain. `true` = `0.15`, or pass `0`–`1`.                     |
@@ -110,6 +116,7 @@ will be painted under the gradient:
 | `grainFrequency` | `number`                                             | —           | Set the noise `baseFrequency` directly (overrides `grainScale`).      |
 | `grainOctaves`   | `number`                                             | `2`         | Noise octaves — more = softer/cloudier, fewer = tighter.              |
 | `blur`        | `number`                                                | `0`         | Softness. Baked into the blobs for mesh/aurora (filter-free, no flicker); a CSS blur in px for linear/radial/conic. |
+| `warp`        | `boolean \| { scale?; intensity?; detail? }`            | `false`     | Warp the color layers into organic swirls & waves via an SVG noise filter (mesh / aurora / liquid). `scale` = swirl size, `intensity` = px pushed, `detail` = noise octaves (1–4). On by default for `variant="liquid"`. |
 | `animate`     | `boolean \| { speed?: number }`                         | `false`     | Slow organic drift. Honors `prefers-reduced-motion`.                  |
 | `interactive` | `boolean`                                               | `false`     | Layers drift toward the pointer.                                      |
 | `opacity`     | `number`                                                | `1`         | Overall opacity (for overlays).                                       |
@@ -124,6 +131,9 @@ will be painted under the gradient:
 - **mesh** — layered radial "blobs", one per color. The smooth Arc/Stripe look. Default.
 - **aurora** — same blobs blended with `screen` for glowing, neon overlaps. Wants a
   dark background (the `screen` blend washes out on light ones).
+- **liquid** — `mesh` with the `warp` filter on: the blobs melt into organic swirls and
+  waves, the shader-gradient look without WebGL. Equivalent to `<Gradient variant="mesh"
+  warp />`; add `animate` and the colors flow through the warp. Tune via the `warp` object.
 - **linear** / **radial** / **conic** — classic CSS gradients across your colors.
 
 ## `<Noise />` — texture without the gradient
@@ -169,6 +179,10 @@ Object.keys(presets); // inspect or remix any palette
 - **Grain** = an inline `feTurbulence` SVG noise tile blended with `overlay` — crisp at
   any DPI, weighs nothing, no image assets.
 - **Blur** is applied only to the color layers, so grain stays sharp on top.
+- **Warp / liquid** feeds the blobs through a static `feTurbulence` +
+  `feDisplacementMap` filter — a fixed "lens" that bends circles into swirls and waves.
+  The filter is never animated (that boils/jitters); instead the rAF drift slides the
+  colors through it, so motion stays buttery-smooth.
 - **Animate / interactive** drive per-layer `translate3d` from a single
   `requestAnimationFrame` loop (GPU-friendly, parks itself when idle).
 

@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { CSSProperties } from "react";
 import type { GradientProps, GradientStop } from "./types";
 import { presets } from "./presets";
@@ -9,6 +16,7 @@ import {
   type Layer,
 } from "./mesh";
 import { grainDataUrl } from "./grain";
+import { resolveWarp, WarpFilter } from "./warp";
 import { useLayerMotion } from "./useLayerMotion";
 import { useResolvedTheme, pickTheme } from "./theme";
 
@@ -69,6 +77,7 @@ export function Gradient(props: GradientProps) {
     grainFrequency,
     grainOctaves,
     blur = 0,
+    warp: warpProp,
     animate = false,
     interactive = false,
     opacity = 1,
@@ -99,7 +108,15 @@ export function Gradient(props: GradientProps) {
     [JSON.stringify(colors), seed]
   );
 
-  const isLayered = variant === "mesh" || variant === "aurora";
+  const isLayered =
+    variant === "mesh" || variant === "aurora" || variant === "liquid";
+  // `liquid` is mesh with the warp filter on by default; any layered variant
+  // can opt in (or liquid can opt out) via the `warp` prop.
+  const warp = resolveWarp(
+    variant === "liquid" ? (warpProp ?? true) : warpProp
+  );
+  const rawId = useId();
+  const warpId = `mg-warp-${rawId.replace(/:/g, "")}`;
   const animateOn = !!animate;
   const speed =
     typeof animate === "object" && animate.speed ? animate.speed : 1;
@@ -110,6 +127,10 @@ export function Gradient(props: GradientProps) {
     speed,
     interactive,
     seed,
+    // When warping, the field itself now morphs (see WarpFilter), so the colors
+    // only need a touch more travel to read as flowing — pushing them hard
+    // through the displacement is what used to snap across its ridges.
+    driftScale: warp ? 1.15 : 1,
   });
 
   const grainAmount = grain === true ? 0.15 : grain === false ? 0 : grain;
@@ -139,11 +160,21 @@ export function Gradient(props: GradientProps) {
   const paint = (
     <>
       {isLayered ? (
-        // No CSS filter here: `blur` is baked into the blob softness instead,
-        // so the animated mesh never sits under a filter (which flickers in
-        // Firefox at full-screen sizes). Each blob overscans the clip so its
-        // edges never enter view while moving.
-        <div style={FILL}>
+        // `blur` is baked into the blob softness (filter-free) so the mesh
+        // never sits under a *blur* filter (which flickers in Firefox at
+        // full-screen sizes). The optional `warp` displacement filter goes on
+        // this wrapper instead, deforming the composited blobs as one group.
+        // Each blob overscans the clip so its edges never enter view, and the
+        // warp's filter region is oversized to match.
+        <div style={{ ...FILL, filter: warp ? `url(#${warpId})` : undefined }}>
+          {warp && (
+            <WarpFilter
+              id={warpId}
+              warp={warp}
+              animate={animateOn}
+              speed={speed}
+            />
+          )}
           {layers.map((l, i) => (
             <div
               key={i}

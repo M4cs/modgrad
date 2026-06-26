@@ -143,6 +143,7 @@ function VariantGallery() {
   const variants: { v: GradientVariant; note: string }[] = [
     { v: "mesh", note: "layered blobs" },
     { v: "aurora", note: "screen blend" },
+    { v: "liquid", note: "warped swirls" },
     { v: "linear", note: "angle 135°" },
     { v: "radial", note: "centered" },
     { v: "conic", note: "sweep" },
@@ -166,6 +167,90 @@ function VariantGallery() {
             </div>
           ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------------------------------------------------- Liquid */
+function LiquidSection() {
+  const colors = ["#e8385e", "#b13ad8", "#4920d0", "#ff7eb3"];
+  return (
+    <section className="block" id="liquid">
+      <div className="wrap">
+        <div className="eyebrow">Beyond circles</div>
+        <h2>Liquid warp</h2>
+        <p className="lead">
+          An SVG noise filter melts the mesh's blobs into organic swirls and
+          waves — the shader-gradient look, still pure CSS/SVG and zero deps.
+          Use <code>variant="liquid"</code> for the one-word version, or add{" "}
+          <code>warp</code> to any <code>mesh</code> / <code>aurora</code> and
+          tune <code>scale</code>, <code>intensity</code>, <code>detail</code>.
+          Add <code>animate</code> and the colors drift <em>through</em> the
+          warp — a smooth, jitter-free flow.
+        </p>
+        <div className="grid">
+          <div className="tile">
+            <Gradient colors={colors} variant="liquid" background="#1a0b2e" />
+            <span className="label">liquid</span>
+            <span className="sub">static warp</span>
+          </div>
+          <div className="tile">
+            <Gradient
+              colors={colors}
+              variant="liquid"
+              background="#1a0b2e"
+              animate
+            />
+            <span className="label">liquid · animate</span>
+            <span className="sub">flowing</span>
+          </div>
+          <div className="tile">
+            <Gradient
+              colors={colors}
+              background="#1a0b2e"
+              warp={{ scale: 2, intensity: 110 }}
+              animate
+            />
+            <span className="label">warp tuned</span>
+            <span className="sub">big molten swirls</span>
+          </div>
+          <div className="tile">
+            <Gradient
+              colors={colors}
+              variant="aurora"
+              background="#05010f"
+              warp={{ scale: 1.4, intensity: 70 }}
+              grain={0.1}
+              animate
+            />
+            <span className="label">aurora · warp</span>
+            <span className="sub">composes with any layered look</span>
+          </div>
+        </div>
+        <pre className="snippet mono">
+          <code>
+            {"<"}
+            <span className="a">Gradient</span> <span className="k">colors</span>
+            ={"{"}
+            <span className="s">colors</span>
+            {"} "}
+            <span className="k">variant</span>=<span className="s">"liquid"</span>{" "}
+            <span className="k">animate</span> {"/>"}
+            {"\n\n"}
+            <span style={{ opacity: 0.5 }}>// or tune it on any mesh/aurora</span>
+            {"\n<"}
+            <span className="a">Gradient</span> <span className="k">colors</span>
+            ={"{"}
+            <span className="s">colors</span>
+            {"} "}
+            <span className="k">warp</span>={"{{ "}
+            <span className="k">scale</span>: <span className="n">2</span>,{" "}
+            <span className="k">intensity</span>: <span className="n">110</span>
+            {" }} "}
+            <span className="k">animate</span> {"/>"}
+          </code>
+        </pre>
       </div>
     </section>
   );
@@ -243,7 +328,13 @@ function Playground() {
   const [palette, setPalette] = useState(0);
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const [animate, setAnimate] = useState(true);
+  const [speed, setSpeed] = useState(1);
   const [interactive, setInteractive] = useState(true);
+  const [warp, setWarp] = useState(false);
+
+  // warp only applies to the layered variants.
+  const layered =
+    variant === "mesh" || variant === "aurora" || variant === "liquid";
 
   const pal = PALETTES[palette]!;
   const swatchColors = theme === "light" ? pal.light : pal.dark;
@@ -264,7 +355,8 @@ function Playground() {
               grainScale={grainScale}
               grainOctaves={grainOctaves}
               blur={blur}
-              animate={animate}
+              warp={warp}
+              animate={animate ? { speed } : false}
               interactive={interactive}
               background={PLAY_BG}
             />
@@ -274,7 +366,14 @@ function Playground() {
               <label>variant</label>
               <div className="seg">
                 {(
-                  ["mesh", "aurora", "linear", "radial", "conic"] as const
+                  [
+                    "mesh",
+                    "aurora",
+                    "liquid",
+                    "linear",
+                    "radial",
+                    "conic",
+                  ] as const
                 ).map((v) => (
                   <button
                     key={v}
@@ -340,6 +439,20 @@ function Playground() {
               />
             </div>
             <div className="ctrl">
+              <label>
+                speed <b>{speed.toFixed(2)}×</b>
+              </label>
+              <input
+                type="range"
+                min={0}
+                max={3}
+                step={0.05}
+                value={speed}
+                disabled={!animate}
+                onChange={(e) => setSpeed(+e.target.value)}
+              />
+            </div>
+            <div className="ctrl">
               <label>palette</label>
               <div className="swatches">
                 {PALETTES.map((p, i) => (
@@ -388,6 +501,19 @@ function Playground() {
                 onChange={(e) => setInteractive(e.target.checked)}
               />
               interactive (follow cursor)
+            </label>
+            <label
+              className="toggle"
+              style={{ opacity: layered ? 1 : 0.4 }}
+              title={layered ? "" : "warp needs a layered variant"}
+            >
+              <input
+                type="checkbox"
+                checked={warp}
+                disabled={!layered}
+                onChange={(e) => setWarp(e.target.checked)}
+              />
+              warp (liquid swirls)
             </label>
           </div>
         </div>
@@ -438,10 +564,24 @@ function Playground() {
             <span className="k">blur</span>={"{"}
             <span className="n">{blur}</span>
             {"}"}
+            {warp && layered ? (
+              <>
+                {"\n  "}
+                <span className="k">warp</span>
+              </>
+            ) : null}
             {animate ? (
               <>
                 {"\n  "}
                 <span className="k">animate</span>
+                {speed !== 1 ? (
+                  <>
+                    ={"{{ "}
+                    <span className="k">speed</span>:{" "}
+                    <span className="n">{speed}</span>
+                    {" }}"}
+                  </>
+                ) : null}
               </>
             ) : null}
             {interactive ? (
@@ -554,6 +694,7 @@ function App() {
       <ShowcaseSection />
       <PresetGallery />
       <VariantGallery />
+      <LiquidSection />
       <ThemeSection />
       <OverlaySection />
       <NoiseSection />

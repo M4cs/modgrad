@@ -9,11 +9,13 @@ export {
   mulberry32,
 } from "./mesh";
 export { grainDataUrl } from "./grain";
+export { resolveWarp, WarpFilter } from "./warp";
 export { useResolvedTheme, pickTheme } from "./theme";
 export type {
   GradientProps,
   GradientStop,
   GradientVariant,
+  WarpOptions,
   PresetName,
   Preset,
   Themeable,

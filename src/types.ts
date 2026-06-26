@@ -31,11 +31,23 @@ export type GradientStop =
 export type GradientVariant =
   | "mesh"
   | "aurora"
+  | "liquid"
   | "linear"
   | "radial"
   | "conic";
 
 export type Vec2 = { x: number; y: number };
+
+/** Organic SVG-filter deformation of the color layers — swirls, waves and
+ * molten shapes, beyond the mesh's plain circles. Pure CSS/SVG, zero deps. */
+export interface WarpOptions {
+  /** Size of the swirls. Larger = bigger, smoother undulations. Default 1. */
+  scale?: number;
+  /** How far the colors are pushed, in px. Higher = more molten. Default 55. */
+  intensity?: number;
+  /** Turbulence detail. More = finer, busier noise. 1–4. Default 2. */
+  detail?: number;
+}
 
 export interface GradientProps {
   /** The colors of the gradient. 2+ recommended. Can differ per theme. */
@@ -64,6 +76,11 @@ export interface GradientProps {
 
   /** Gaussian blur applied to the color layers, in px. Default 0. */
   blur?: number;
+
+  /** Warp the color layers into organic swirls & waves via an SVG noise
+   * filter (mesh / aurora / liquid only). `true` or a tuning object.
+   * `variant="liquid"` turns this on by default. */
+  warp?: boolean | WarpOptions;
 
   /** Animate the layers with slow organic motion. `true` or `{ speed }`. */
   animate?: boolean | { speed?: number };
