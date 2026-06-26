@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { GradientProps, GradientStop } from "./types";
 import { presets } from "./presets";
@@ -23,10 +23,36 @@ const FILL: CSSProperties = {
 const OVERSCAN = 2;
 const EDGE = ((OVERSCAN - 1) / 2) * 100; // 50
 
-// Minimum baked softness (in `blur` px) applied to an animated mesh. Below this,
-// the moving overscanned blobs can shimmer in Firefox; ~12 is imperceptibly
-// soft yet flicker-free without washing out `screen`-blended aurora blends.
-const MIN_MOTION_BLUR = 12;
+// Minimum baked softness for an animated mesh, so the moving blobs never shimmer
+// in Firefox. The flicker threshold scales with the painted area: a tiny preview
+// is fine while crisp, but a full-screen mesh needs much more softness. So the
+// floor is `max(MIN_MOTION_BLUR, side × SIZE_MOTION_BLUR)` px, where `side` is
+// the element's larger edge — e.g. ~40px on a 1440px hero, ~7px on a 250px tile.
+const MIN_MOTION_BLUR = 8;
+const SIZE_MOTION_BLUR = 0.028;
+const MAX_MOTION_BLUR = 64;
+
+// useLayoutEffect on the client, useEffect on the server (avoids SSR warnings).
+const useIsoLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+/** Track an element's larger side (px) for the size-aware motion-blur floor. */
+function useMaxSide() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [side, setSide] = useState(0);
+  useIsoLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () =>
+      setSide(Math.max(el.offsetWidth, el.offsetHeight));
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, side] as const;
+}
 
 /**
  * A beautiful, optionally animated gradient layer. Drop it into any
@@ -88,15 +114,21 @@ export function Gradient(props: GradientProps) {
 
   const grainAmount = grain === true ? 0.15 : grain === false ? 0 : grain;
 
+  const [rootRef, maxSide] = useMaxSide();
+
   // A moving, overscanned mesh that's too crisp shimmers in Firefox. Enforce a
   // minimum softness whenever the mesh animates so it can never flicker, no
-  // matter how low `blur` is set; static gradients keep the exact blur asked.
-  // Aurora is exempt: its `screen` blend washes to white when softened, and the
-  // floor is only there to stop the *mesh* shimmer.
+  // matter how low `blur` is set — scaled to the painted area, since larger
+  // surfaces need much more. Static gradients keep the exact blur asked, and
+  // aurora is exempt (its `screen` blend washes to white when softened).
   const motionOn = animateOn || interactive;
+  const motionFloor = Math.min(
+    MAX_MOTION_BLUR,
+    Math.max(MIN_MOTION_BLUR, maxSide * SIZE_MOTION_BLUR)
+  );
   const effBlur =
     isLayered && motionOn && variant !== "aurora"
-      ? Math.max(blur, MIN_MOTION_BLUR)
+      ? Math.max(blur, motionFloor)
       : blur;
 
   // For mesh/aurora, `blur` is emulated by softening the blobs (filter-free).
@@ -173,6 +205,7 @@ export function Gradient(props: GradientProps) {
   if (children != null && children !== false) {
     return (
       <div
+        ref={rootRef}
         className={className}
         // `isolation: isolate` makes this a stacking context, which scopes the
         // gradient's `zIndex: -1` to this box: it paints above the box's own
@@ -216,7 +249,7 @@ export function Gradient(props: GradientProps) {
   };
 
   return (
-    <div className={className} style={container} aria-hidden>
+    <div ref={rootRef} className={className} style={container} aria-hidden>
       {paint}
     </div>
   );
