@@ -1,8 +1,9 @@
 # dependencies (bun install)
 node_modules
 
-# output
+# output (build artifacts — dist is rebuilt on publish via prepublishOnly)
 out
+dist
 dist-demo
 *.tgz
 
