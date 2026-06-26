@@ -35,7 +35,9 @@ export const presets: Record<PresetName, Preset> = {
   },
   aurora: {
     variant: "aurora",
-    background: { light: "#eaf7ff", dark: "#020617" },
+    // aurora glows via `screen`, which needs a dark backdrop in both themes —
+    // on a light background the blend washes out to white.
+    background: { light: "#10182e", dark: "#020617" },
     colors: ["#22d3ee", "#34d399", "#a78bfa", "#2dd4bf"],
   },
   peach: {

@@ -14,23 +14,41 @@ bun add modgrad   # or npm / pnpm / yarn
 
 ## Quick start
 
-Drop it into any `position: relative` container — it fills the parent:
+The easiest way — **wrap your content** and it sits on top automatically (no
+`position` or `z-index` wiring needed):
 
 ```tsx
 import { Gradient } from "modgrad";
 
 function Card() {
   return (
-    <div style={{ position: "relative", borderRadius: 24, overflow: "hidden" }}>
-      <Gradient preset="arc" grain />
-      <div style={{ position: "relative", padding: 32 }}>Your content</div>
-    </div>
+    <Gradient preset="arc" grain style={{ borderRadius: 24, padding: 32 }}>
+      <h1>Your content</h1>
+    </Gradient>
   );
 }
 ```
 
-That's it. The gradient is `position: absolute; inset: 0`, `pointer-events: none`, and
-`aria-hidden`, so it sits behind your content without interfering.
+When you pass children, `<Gradient>` renders a self-contained box: the gradient
+fills it and the children sit above (their flex/grid layout is preserved, and
+they stay interactive).
+
+### As a background layer (no children)
+
+With no children it's a bare fill layer — drop it into your own
+`position: relative` container. Because it's absolutely positioned, **sibling
+content must be elevated** (give it `position: relative` / a `z-index`), or it
+will be painted under the gradient:
+
+```tsx
+<div style={{ position: "relative" }}>
+  <Gradient preset="arc" grain />
+  <div style={{ position: "relative", zIndex: 1 }}>Your content</div>
+</div>
+```
+
+(Prefer the wrapper form above — it avoids this entirely.) The layer is
+`pointer-events: none` and `aria-hidden`, so it never blocks clicks.
 
 ## Recipes
 
@@ -104,8 +122,36 @@ That's it. The gradient is `position: absolute; inset: 0`, `pointer-events: none
 ## Variants
 
 - **mesh** — layered radial "blobs", one per color. The smooth Arc/Stripe look. Default.
-- **aurora** — same blobs blended with `screen` for glowing, neon overlaps.
+- **aurora** — same blobs blended with `screen` for glowing, neon overlaps. Wants a
+  dark background (the `screen` blend washes out on light ones).
 - **linear** / **radial** / **conic** — classic CSS gradients across your colors.
+
+## `<Noise />` — texture without the gradient
+
+Just the grain. Add a `blur` to frost what's behind it (a textured
+`backdrop-blur`) and a `tint` for paper-like tones. Overlays anything, or wraps
+content like `<Gradient>`.
+
+```tsx
+import { Noise } from "modgrad";
+
+// paper-textured, tinted panel wrapping content
+<Noise intensity={0.5} tint="#b8a575" tintAmount={0.25} style={{ padding: 24 }}>
+  <p>Looks like paper.</p>
+</Noise>
+
+// frosted, textured glass over whatever's behind it
+<Noise blur={10} intensity={0.35} tint="#fff" tintAmount={0.08} />
+```
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `intensity` | `boolean \| number` | `0.15` | Grain strength (`true` = 0.15). |
+| `scale` / `frequency` / `octaves` | `number` | `180` / — / `2` | Grain texture controls (same as `grain*` on `Gradient`). |
+| `blur` | `number` | `0` | Backdrop blur in px — frosts the content behind. |
+| `tint` | `string` | — | Wash color painted over the backdrop. |
+| `tintAmount` | `number` | `0.12` | Tint opacity. |
+| `opacity` / `blendMode` / `fixed` / `zIndex` / `className` / `style` / `children` | — | — | Same as `Gradient`. |
 
 ## Presets
 

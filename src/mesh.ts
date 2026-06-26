@@ -96,9 +96,12 @@ export function blobBackground(l: Layer, soft = 0): string {
   // feathered — instead of a CSS `filter: blur()`, which flickers over animated
   // content in Firefox at large sizes. The blobs are already soft gradients, so
   // this reads the same while staying filter-free and cheap.
-  const s = l.size * (1 + soft * 0.6);
+  // Grow the blob only modestly with softness — over-growing makes `screen`
+  // (aurora) blends pile up and blow out to white. Most of the "blur" look
+  // comes from feathering the falloff instead.
+  const s = l.size * (1 + soft * 0.3);
   // `falloff` lets a blob hold its core color longer; softness feathers earlier.
-  const hold = clamp(l.falloff, 0, 1) * (1 - soft * 0.7);
+  const hold = clamp(l.falloff, 0, 1) * (1 - soft * 0.6);
   const stops = [
     `${c(1)} 0%`,
     `${c(0.88)} ${(s * 0.22 * hold).toFixed(1)}%`,

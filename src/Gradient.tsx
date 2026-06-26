@@ -23,6 +23,11 @@ const FILL: CSSProperties = {
 const OVERSCAN = 2;
 const EDGE = ((OVERSCAN - 1) / 2) * 100; // 50
 
+// Minimum baked softness (in `blur` px) applied to an animated mesh. Below this,
+// the moving overscanned blobs can shimmer in Firefox; ~12 is imperceptibly
+// soft yet flicker-free without washing out `screen`-blended aurora blends.
+const MIN_MOTION_BLUR = 12;
+
 /**
  * A beautiful, optionally animated gradient layer. Drop it into any
  * `position: relative` container as a background, or give it `opacity` /
@@ -83,24 +88,24 @@ export function Gradient(props: GradientProps) {
 
   const grainAmount = grain === true ? 0.15 : grain === false ? 0 : grain;
 
+  // A moving, overscanned mesh that's too crisp shimmers in Firefox. Enforce a
+  // minimum softness whenever the mesh animates so it can never flicker, no
+  // matter how low `blur` is set; static gradients keep the exact blur asked.
+  // Aurora is exempt: its `screen` blend washes to white when softened, and the
+  // floor is only there to stop the *mesh* shimmer.
+  const motionOn = animateOn || interactive;
+  const effBlur =
+    isLayered && motionOn && variant !== "aurora"
+      ? Math.max(blur, MIN_MOTION_BLUR)
+      : blur;
+
   // For mesh/aurora, `blur` is emulated by softening the blobs (filter-free).
   // Diminishing curve: 30 → ~0.30, 80 → ~0.53.
-  const layeredSoft = blur > 0 ? blur / (blur + 70) : 0;
+  const layeredSoft = effBlur > 0 ? effBlur / (effBlur + 70) : 0;
 
-  const container: CSSProperties = {
-    ...(fixed ? { position: "fixed", inset: 0 } : FILL),
-    overflow: "hidden",
-    pointerEvents: "none",
-    isolation: "isolate",
-    opacity,
-    mixBlendMode: blendMode,
-    zIndex,
-    background,
-    ...style,
-  };
-
-  return (
-    <div className={className} style={container} aria-hidden>
+  // The gradient itself (color layers + grain) — shared by both render modes.
+  const paint = (
+    <>
       {isLayered ? (
         // No CSS filter here: `blur` is baked into the blob softness instead,
         // so the animated mesh never sits under a filter (which flickers in
@@ -117,7 +122,10 @@ export function Gradient(props: GradientProps) {
                 position: "absolute",
                 inset: `-${EDGE}%`,
                 background: blobBackground(overscan(l), layeredSoft),
-                opacity: l.opacity,
+                // The soft multi-stop falloff fills more area than a hard edge,
+                // which makes `screen` (aurora) overlaps saturate to white — so
+                // hold aurora layers back to keep the glow without blowing out.
+                opacity: variant === "aurora" ? l.opacity * 0.5 : l.opacity,
                 mixBlendMode: variant === "aurora" ? "screen" : "normal",
                 willChange:
                   animateOn || interactive ? "transform" : undefined,
@@ -156,8 +164,60 @@ export function Gradient(props: GradientProps) {
           }}
         />
       )}
+    </>
+  );
 
-      {children}
+  // BOX MODE — content passed as children. Render a self-contained box: the
+  // gradient fills it and the content automatically sits above, no z-index or
+  // `position: relative` wiring required. This is the intuitive, drop-in usage.
+  if (children != null && children !== false) {
+    return (
+      <div
+        className={className}
+        // `isolation: isolate` makes this a stacking context, which scopes the
+        // gradient's `zIndex: -1` to this box: it paints above the box's own
+        // background but below the children — so content sits on top without
+        // any z-index wiring, and children stay direct so flex/grid layout on
+        // `style` keeps working.
+        style={{ position: "relative", isolation: "isolate", ...style }}
+      >
+        <div
+          aria-hidden
+          style={{
+            ...FILL,
+            zIndex: -1,
+            overflow: "hidden",
+            pointerEvents: "none",
+            borderRadius: "inherit",
+            opacity,
+            mixBlendMode: blendMode,
+            background,
+          }}
+        >
+          {paint}
+        </div>
+        {children}
+      </div>
+    );
+  }
+
+  // LAYER MODE — no children. A bare fill layer to drop into your own
+  // positioned container (as a background) or over content (as an overlay).
+  const container: CSSProperties = {
+    ...(fixed ? { position: "fixed", inset: 0 } : FILL),
+    overflow: "hidden",
+    pointerEvents: "none",
+    isolation: "isolate",
+    opacity,
+    mixBlendMode: blendMode,
+    zIndex,
+    background,
+    ...style,
+  };
+
+  return (
+    <div className={className} style={container} aria-hidden>
+      {paint}
     </div>
   );
 }

@@ -1,4 +1,6 @@
 export { Gradient } from "./Gradient";
+export { Noise } from "./Noise";
+export type { NoiseProps } from "./Noise";
 export { presets } from "./presets";
 export {
   resolveLayers,
